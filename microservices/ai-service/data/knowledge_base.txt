@@ -1,0 +1,18 @@
+MediConnect Knowledge Base - Medical Assistant
+
+1. Sypmtômes de la grippe :
+La grippe se manifeste généralement par une forte fièvre, des courbatures, de la fatigue intense, des maux de tête et parfois une toux sèche.
+
+2. Hypertension :
+L'hypertension artérielle est une pression élevée du sang dans les artères. Elle peut être asymptomatique au début mais nécessite un suivi régulier.
+
+3. Diabète de type 2 :
+C'est une maladie chronique où le corps ne gère pas bien l'insuline. Les symptômes incluent une soif excessive, une miction fréquente et une fatigue.
+
+4. Vaccination :
+Les vaccins aident le système immunitaire à reconnaître et à combattre les virus et bactéries spécifiques. MediConnect recommande de suivre le calendrier vaccinal officiel.
+
+5. Rendez-vous :
+Pour prendre rendez-vous via MediConnect, vous devez fournir votre nom, la spécialité du médecin (ex: Cardiologue, Généraliste) et une date souhaitée.
+
+IMPORTANT : MediConnect AI ne remplace pas un médecin. En cas d'urgence, contactez immédiatement les secours.
