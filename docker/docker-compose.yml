@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mediconnect-db
+    environment:
+      POSTGRES_DB: mediconnect
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  monolith:
+    build:
+      context: ../monolith
+      dockerfile: Dockerfile
+    container_name: mediconnect-monolith
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Database=mediconnect;Username=postgres;Password=password
+      - Jwt__Key=THIS_IS_A_SUPER_SECRET_KEY_123456_FOR_DOCKER
+      - Jwt__Issuer=MediConnect
+      - Jwt__Audience=MediConnectUsers
+      - Jwt__DurationInMinutes=60
+    ports:
+      - "5195:8080"
+
+  doctor-service:
+    build:
+      context: ../microservices/doctor-service
+      dockerfile: DockerService.API/Dockerfile
+    container_name: mediconnect-doctor-service
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Database=doctorservice;Username=postgres;Password=password
+      - Jwt__Key=THIS_IS_A_SUPER_SECRET_KEY_123456_FOR_DOCKER
+      - Jwt__Issuer=MediConnect
+      - Jwt__Audience=MediConnectUsers
+    ports:
+      - "5196:8080"
+
+  messaging-service:
+    build:
+      context: ../microservices/messaging-service
+      dockerfile: MessagingService.API/Dockerfile
+    container_name: mediconnect-messaging-service
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Database=messagingservice;Username=postgres;Password=password
+      - Jwt__Key=THIS_IS_A_SUPER_SECRET_KEY_123456_FOR_DOCKER
+      - Jwt__Issuer=MediConnect
+      - Jwt__Audience=MediConnectUsers
+    ports:
+      - "5197:8080"
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: mediconnect-frontend
+    depends_on:
+      - monolith
+      - doctor-service
+      - messaging-service
+    ports:
+      - "8081:80"
+
+volumes:
+  postgres_data:

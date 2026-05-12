@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DoctorService.API/DoctorService.API.csproj" />
+  <Project Path="DoctorService.Application/DoctorService.Application.csproj" />
+  <Project Path="DoctorService.Domain/DoctorService.Domain.csproj" />
+  <Project Path="DoctorService.Infrastructure/DoctorService.Infrastructure.csproj" />
+</Solution>

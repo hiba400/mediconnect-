@@ -1,0 +1,49 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-monolith:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Restore dependencies
+      run: dotnet restore monolith/MediConnect.slnx
+    - name: Build
+      run: dotnet build monolith/MediConnect.slnx --no-restore
+
+  build-doctor-service:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+    - name: Restore dependencies
+      run: dotnet restore microservices/doctor-service/DoctorService.slnx
+    - name: Build
+      run: dotnet build microservices/doctor-service/DoctorService.slnx --no-restore
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 22
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    - name: Build
+      working-directory: ./frontend
+      run: npm run build

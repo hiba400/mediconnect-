@@ -1,0 +1,12 @@
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\bin\Debug\net10.0\MessagingService.Domain.deps.json
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\bin\Debug\net10.0\MessagingService.Domain.dll
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\bin\Debug\net10.0\MessagingService.Domain.pdb
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.AssemblyInfoInputs.cache
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.AssemblyInfo.cs
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.csproj.CoreCompileInputs.cache
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.sourcelink.json
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.dll
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\refint\MessagingService.Domain.dll
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\MessagingService.Domain.pdb
+C:\Users\Pro\Downloads\mediconnect\microservices\messaging-service\MessagingService.Domain\obj\Debug\net10.0\ref\MessagingService.Domain.dll
