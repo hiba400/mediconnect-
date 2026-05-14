@@ -42,6 +42,18 @@ services:
     ports:
       - "5196:8080"
 
+  appointment-service:
+    build:
+      context: ../microservices/appointment-service
+      dockerfile: AppointmentService.API/Dockerfile
+    container_name: mediconnect-appointment-service
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=db;Database=appointmentservice;Username=postgres;Password=password
+    ports:
+      - "5199:8080"
+
   messaging-service:
     build:
       context: ../microservices/messaging-service
@@ -65,6 +77,7 @@ services:
     depends_on:
       - monolith
       - doctor-service
+      - appointment-service
       - messaging-service
       - ai-service
     ports:

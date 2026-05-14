@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using MediConnect.Infrastructure.Persistence;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using MediConnect.API.Validators;
-
+using AppointmentService.API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
