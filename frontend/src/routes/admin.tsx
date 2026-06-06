@@ -20,8 +20,8 @@ function AdminLayout() {
   const loginAs = useAuth((s) => s.loginAs);
   const navigate = useNavigate();
   useEffect(() => {
-    if (!user) loginAs("admin");
+    if (!user) navigate({ to: "/login" });
     else if (user.role !== "admin") navigate({ to: user.role === "doctor" ? "/doctor" : "/patient" });
-  }, [user, loginAs, navigate]);
+  }, [user, navigate]);
   return <DashboardShell nav={nav} variant="admin"><Outlet /></DashboardShell>;
 }

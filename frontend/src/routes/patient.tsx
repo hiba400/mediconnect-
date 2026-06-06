@@ -1,8 +1,7 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, Search, Calendar, MessageSquare, Sparkles, Settings } from "lucide-react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
-import { useAuth } from "@/store/auth";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 
 export const Route = createFileRoute("/patient")({ component: PatientLayout });
 
@@ -16,12 +15,6 @@ const nav: NavItem[] = [
 ];
 
 function PatientLayout() {
-  const user = useAuth((s) => s.user);
-  const loginAs = useAuth((s) => s.loginAs);
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (!user) loginAs("patient");
-    else if (user.role !== "patient") navigate({ to: user.role === "doctor" ? "/doctor" : "/admin" });
-  }, [user, loginAs, navigate]);
+  useAuthGuard("patient");
   return <DashboardShell nav={nav} variant="patient"><Outlet /></DashboardShell>;
 }

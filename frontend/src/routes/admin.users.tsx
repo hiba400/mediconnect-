@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, MoreVertical } from "lucide-react";
+import { Search } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,24 +7,41 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import React from "react";
-import { useUsers } from "@/hooks/useUsers";
+import { useToggleUserActive, useUsers } from "@/hooks/useUsers";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/users")({ component: AdminUsers });
 
 function AdminUsers() {
   const { data: apiUsers, isLoading } = useUsers();
+  const toggleActive = useToggleUserActive();
 
   const users = React.useMemo(() => {
     if (!apiUsers) return [];
-    return apiUsers.map(u => ({
+    return apiUsers.map((u) => ({
       id: u.id,
       name: u.fullName,
       email: u.email,
       role: u.role === 0 ? "patient" : u.role === 1 ? "doctor" : "admin",
       status: u.isActive ? "active" : "inactive",
-      joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Today",
+      isActive: u.isActive,
+      joined: "—",
     }));
   }, [apiUsers]);
+
+  const handleToggle = async (u: (typeof users)[0]) => {
+    try {
+      await toggleActive.mutateAsync({
+        id: u.id,
+        fullName: u.name,
+        email: u.email,
+        isActive: !u.isActive,
+      });
+      toast.success(u.isActive ? "User deactivated" : "User activated");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to update user");
+    }
+  };
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Loading users...</div>;
@@ -51,7 +68,11 @@ function AdminUsers() {
                 <TableCell><Badge variant={u.role === "doctor" ? "default" : u.role === "admin" ? "destructive" : "outline"} className="capitalize">{u.role}</Badge></TableCell>
                 <TableCell className="text-sm text-muted-foreground">{u.joined}</TableCell>
                 <TableCell><Badge className={u.status === "active" ? "bg-success/15 text-success border-0" : "bg-destructive/15 text-destructive border-0"}>{u.status}</Badge></TableCell>
-                <TableCell className="text-right"><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></TableCell>
+                <TableCell className="text-right">
+                  <Button variant="outline" size="sm" onClick={() => handleToggle(u)} disabled={u.role === "admin"}>
+                    {u.isActive ? "Deactivate" : "Activate"}
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

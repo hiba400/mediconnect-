@@ -1,19 +1,16 @@
-# Build stage
-FROM node:22 AS build
+FROM node:22-alpine
+
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy source code and build
+# Copy source code
 COPY . .
-RUN npm run build
 
-# Serve stage
-FROM nginx:stable-alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Expose Vite dev port
+EXPOSE 5173
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Run in dev mode with host binding
+CMD ["npm", "run", "dev", "--", "--host"]

@@ -66,9 +66,34 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+const messagingProxyTarget =
+  process.env.MESSAGING_PROXY_TARGET ?? "http://localhost:5197";
+
+async function proxyMessagingApi(request: Request): Promise<Response | null> {
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith("/messaging-api")) return null;
+
+  const targetPath =
+    url.pathname.replace(/^\/messaging-api/, "/api") + url.search;
+  const targetUrl = `${messagingProxyTarget.replace(/\/$/, "")}${targetPath}`;
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+
+  return fetch(targetUrl, {
+    method: request.method,
+    headers,
+    body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+    // @ts-expect-error duplex required for streaming bodies in Node fetch
+    duplex: "half",
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const proxied = await proxyMessagingApi(request);
+      if (proxied) return proxied;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

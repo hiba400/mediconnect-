@@ -52,7 +52,7 @@ public async Task<IActionResult> Register(RegisterDto dto)
 
     await _context.SaveChangesAsync();
 
-    return Ok(user);
+    return Ok(CreateAuthResponse(user));
 }
 
     [HttpPost("login")]
@@ -66,6 +66,16 @@ public async Task<IActionResult> Register(RegisterDto dto)
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
+        if (!user.IsActive)
+        {
+            return Unauthorized(new { message = "Account is deactivated" });
+        }
+
+        return Ok(CreateAuthResponse(user));
+    }
+
+    private AuthResponseDto CreateAuthResponse(ApplicationUser user)
+    {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -92,13 +102,13 @@ public async Task<IActionResult> Register(RegisterDto dto)
         var jwt = new JwtSecurityTokenHandler()
             .WriteToken(token);
 
-        return Ok(new AuthResponseDto
+        return new AuthResponseDto
         {
             Token = jwt,
             Id = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString().ToLower()
-        });
+        };
     }
 }

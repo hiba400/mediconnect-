@@ -19,9 +19,10 @@ function PatientHome() {
   const { data: apiDoctors } = useDoctors();
   const recommended = React.useMemo(() => {
     if (!apiDoctors) return [];
-    return apiDoctors.slice(0, 3).map(d => ({
+    return apiDoctors.slice(0, 3).map((d) => ({
       id: d.id,
-      name: d.user?.fullName || "Doctor",
+      userId: d.userId,
+      name: d.fullName ?? d.user?.fullName ?? "Doctor",
       specialty: d.specialty || "General",
       avatar: `https://i.pravatar.cc/150?u=${d.id}`,
       nextSlot: "Tomorrow",

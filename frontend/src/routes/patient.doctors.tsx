@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDoctors } from "@/hooks/useDoctors";
+import { normalizeDoctor } from "@/lib/doctors";
 
 export const Route = createFileRoute("/patient/doctors")({ component: FindDoctors });
 
@@ -19,20 +20,17 @@ function FindDoctors() {
 
   const mappedDoctors = useMemo(() => {
     if (!apiDoctors) return [];
-    return apiDoctors.map(d => ({
-      id: d.id,
-      name: d.user?.fullName || "Doctor",
-      specialty: d.specialty || "General",
-      city: d.city || "Unknown",
-      price: d.consultationFee || 50,
-      experience: d.yearsOfExperience || 0,
-      avatar: `https://i.pravatar.cc/150?u=${d.id}`, // Placeholder avatar
-      verified: true,
-      rating: 5.0,
-      reviews: 0,
-      languages: ["English"],
-      nextSlot: "Tomorrow",
-    }));
+    return apiDoctors.map((d) => {
+      const n = normalizeDoctor(d);
+      return {
+        ...n,
+        verified: true,
+        rating: 5.0,
+        reviews: 0,
+        languages: ["English"],
+        nextSlot: "Tomorrow",
+      };
+    });
   }, [apiDoctors]);
 
   const specs = Array.from(new Set(mappedDoctors.map((d) => d.specialty)));

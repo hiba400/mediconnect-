@@ -74,10 +74,45 @@ public class ConversationsController : ControllerBase
         await _conversationRepository.AddAsync(conversation);
         return Ok(new ConversationDto { Id = conversation.Id, PatientId = conversation.PatientId, DoctorId = conversation.DoctorId, CreatedAt = conversation.CreatedAt });
     }
+
+    [HttpPost("{id}/messages")]
+    public async Task<IActionResult> SendMessage(Guid id, [FromBody] SendMessageRequestDto dto)
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var conversation = await _conversationRepository.GetByIdAsync(id);
+
+        if (conversation == null) return NotFound("Conversation not found");
+
+        var message = new Message
+        {
+            ConversationId = id,
+            SenderId = userId,
+            Content = dto.Content
+        };
+
+        await _messageRepository.AddAsync(message);
+
+        var messageDto = new MessageDto
+        {
+            Id = message.Id,
+            ConversationId = message.ConversationId,
+            SenderId = message.SenderId,
+            Content = message.Content,
+            SentAt = message.SentAt,
+            IsRead = message.IsRead
+        };
+
+        return Ok(messageDto);
+    }
 }
 
 public class InitiateConversationDto
 {
     public Guid PatientId { get; set; }
     public Guid DoctorId { get; set; }
+}
+
+public class SendMessageRequestDto
+{
+    public string Content { get; set; } = string.Empty;
 }

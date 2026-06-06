@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/store/auth";
 import { useDoctors } from "@/hooks/useDoctors";
+import { normalizeDoctor } from "@/lib/doctors";
 import { fetchApi } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -22,14 +23,7 @@ function Book() {
     if (!apiDoctors) return null;
     const found = apiDoctors.find((x) => x.id === id);
     if (!found) return null;
-    return {
-      id: found.id,
-      name: found.user?.fullName || "Doctor",
-      specialty: found.specialty,
-      city: found.city,
-      price: found.consultationFee,
-      avatar: `https://i.pravatar.cc/150?u=${found.id}`,
-    };
+    return normalizeDoctor(found);
   }, [apiDoctors, id]);
 
   const navigate = useNavigate();
@@ -57,7 +51,7 @@ function Book() {
         method: "POST",
         body: JSON.stringify({
           patientId: user.id,
-          doctorId: d.id,
+          doctorId: d.userId,
           appointmentDate: appointmentDate.toISOString(),
           reason: reason || "Consultation",
         }),

@@ -92,6 +92,34 @@ using (var scope = app.Services.CreateScope())
         );
         db.SaveChanges();
     }
+
+    // Link demo doctor profile to monolith doctor@example.com account
+    try
+    {
+        var monolithUrl = builder.Configuration["Monolith:Url"] ?? "http://localhost:5195/api";
+        using var http = new HttpClient();
+        var loginRes = await http.PostAsJsonAsync(
+            $"{monolithUrl}/Auth/login",
+            new { email = "doctor@example.com", password = "password123" });
+        if (loginRes.IsSuccessStatusCode)
+        {
+            var login = await loginRes.Content.ReadFromJsonAsync<MonolithLoginResponse>();
+            if (login?.Id is Guid monolithDoctorId)
+            {
+                var sarah = db.DoctorProfiles
+                    .FirstOrDefault(p => p.FullName == "Dr. Sarah Smith");
+                if (sarah != null && sarah.UserId != monolithDoctorId)
+                {
+                    sarah.UserId = monolithDoctorId;
+                    await db.SaveChangesAsync();
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Doctor profile sync skipped: {ex.Message}");
+    }
 }
 
 app.UseCors("AllowFrontend");
@@ -100,3 +128,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+file record MonolithLoginResponse(Guid Id, string Token, string FullName, string Email, string Role);

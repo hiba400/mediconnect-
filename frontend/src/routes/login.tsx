@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuth } from "@/store/auth";
+import { loginWithCredentials } from "@/lib/auth-session";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -30,27 +31,36 @@ function Login() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await import("@/lib/api").then(m => m.fetchApi<any>("/Auth/login", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }));
-      
-      setUser({
-        id: res.id,
-        name: res.fullName,
-        email: res.email,
-        role: res.role,
-      }, res.token);
-      
+      const { user, token } = await loginWithCredentials(data.email, data.password);
+      setUser(user, token);
       toast.success("Welcome back!");
-      navigate({ to: res.role === "doctor" ? "/doctor" : res.role === "admin" ? "/admin" : "/patient" });
+      navigate({
+        to: user.role === "doctor" ? "/doctor" : user.role === "admin" ? "/admin" : "/patient",
+        replace: true,
+      });
     } catch (e: any) {
       toast.error(e.message || "Invalid email or password");
     }
   };
 
-  const quickLogin = (role: "patient" | "doctor" | "admin") => {
-    toast.error("Demo login disabled. Please register.");
+  const quickLogin = async (role: "patient" | "doctor" | "admin") => {
+    const creds = {
+      patient: { email: "patient@example.com", password: "password123" },
+      doctor: { email: "doctor@example.com", password: "password123" },
+      admin: { email: "admin@example.com", password: "password123" },
+    };
+    const data = creds[role];
+    try {
+      const { user, token } = await loginWithCredentials(data.email, data.password);
+      setUser(user, token);
+      toast.success("Welcome back!");
+      navigate({
+        to: user.role === "doctor" ? "/doctor" : user.role === "admin" ? "/admin" : "/patient",
+        replace: true,
+      });
+    } catch (e: any) {
+      toast.error(e.message || `Failed to login as ${role}`);
+    }
   };
 
   return (

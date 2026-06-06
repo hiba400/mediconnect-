@@ -9,6 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "@/store/auth";
+import { loginWithCredentials, registerDoctorAndSignIn } from "@/lib/auth-session";
+import { createDoctorProfile } from "@/lib/doctor-profile-api";
+import { submitDoctorApplication } from "@/hooks/useDoctorApplications";
+import {
+  clearDoctorApplyPending,
+  saveDoctorApplyPending,
+} from "@/lib/doctor-apply-pending";
 
 export const Route = createFileRoute("/doctor-apply")({ component: DoctorApply });
 
@@ -16,19 +24,84 @@ const STEPS = ["Identity", "Practice", "Credentials", "Review"];
 
 function DoctorApply() {
   const navigate = useNavigate();
+  const setUser = useAuth((s) => s.setUser);
   const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<string[]>([]);
   const [data, setData] = useState({
-    name: "", email: "", phone: "",
+    name: "", email: "", password: "", phone: "",
     specialty: "", license: "", experience: "", city: "",
     languages: "", bio: "",
   });
 
   const update = (k: string, v: string) => setData((d) => ({ ...d, [k]: v }));
   const submit = async () => {
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Application submitted! Our team will review within 48h.");
-    navigate({ to: "/verify-email" });
+    if (!data.name.trim() || !data.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
+    if (!data.password || data.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    const payload = {
+      fullName: data.name.trim(),
+      email: data.email.trim(),
+      password: data.password,
+    };
+
+    saveDoctorApplyPending(payload);
+    setSubmitting(true);
+    try {
+      const { user, token } = await registerDoctorAndSignIn(payload);
+
+      setUser({ ...user, role: "doctor" }, token);
+
+      await createDoctorProfile({
+        userId: user.id,
+        fullName: payload.fullName,
+        specialty: data.specialty || "General Medicine",
+        bio: data.bio || "",
+        consultationFee: 50,
+        yearsOfExperience: Number(data.experience) || 0,
+        city: data.city || "Unknown",
+      });
+
+      await submitDoctorApplication({
+        userId: user.id,
+        fullName: payload.fullName,
+        email: payload.email,
+        specialty: data.specialty || "General Medicine",
+        licenseNumber: data.license || "",
+        city: data.city || "Unknown",
+        yearsOfExperience: Number(data.experience) || 0,
+        bio: data.bio || "",
+        documentCount: files.length,
+      });
+
+      clearDoctorApplyPending();
+      toast.success("Welcome, doctor! You're signed in.");
+      navigate({ to: "/doctor", replace: true });
+    } catch (e: any) {
+      const message = e.message || "Failed to submit application";
+      if (message.toLowerCase().includes("email already exists")) {
+        try {
+          const { user, token } = await loginWithCredentials(payload.email, payload.password);
+          clearDoctorApplyPending();
+          setUser({ ...user, role: "doctor" }, token);
+          toast.success("Welcome back — you're signed in!");
+          navigate({ to: "/doctor", replace: true });
+          return;
+        } catch {
+          toast.error("This email is already registered. Sign in with your password.");
+        }
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -62,6 +135,7 @@ function DoctorApply() {
             <>
               <FieldRow label="Full name"><Input value={data.name} onChange={(e) => update("name", e.target.value)} placeholder="Dr. Emma Bennett" /></FieldRow>
               <FieldRow label="Email"><Input value={data.email} onChange={(e) => update("email", e.target.value)} type="email" placeholder="dr.emma@clinic.com" /></FieldRow>
+              <FieldRow label="Password"><Input value={data.password} onChange={(e) => update("password", e.target.value)} type="password" placeholder="••••••••" /></FieldRow>
               <FieldRow label="Phone"><Input value={data.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+33 6 12 34 56 78" /></FieldRow>
             </>
           )}
@@ -112,7 +186,7 @@ function DoctorApply() {
                 <Row label="Experience" value={data.experience ? `${data.experience} years` : "—"} />
                 <Row label="Documents" value={`${files.length} file(s)`} />
               </div>
-              <p className="text-xs text-muted-foreground">Our medical board reviews applications within 48 hours. You'll receive an email once approved.</p>
+              <p className="text-xs text-muted-foreground">Submitting creates your doctor account and signs you in automatically.</p>
             </div>
           )}
         </motion.div>
@@ -127,8 +201,8 @@ function DoctorApply() {
             Continue <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
-          <Button onClick={submit} className="bg-gradient-hero border-0 shadow-glow">
-            Submit application <Check className="h-4 w-4 ml-1" />
+          <Button onClick={submit} disabled={submitting} className="bg-gradient-hero border-0 shadow-glow">
+            {submitting ? "Creating account..." : <>Submit application <Check className="h-4 w-4 ml-1" /></>}
           </Button>
         )}
       </div>

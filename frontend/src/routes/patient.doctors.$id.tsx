@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { Star, MapPin, Languages, Calendar, MessageSquare, CheckCircle2, Award, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,29 +6,28 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { doctors, reviews } from "@/lib/mock-data";
+import { useAuth } from "@/store/auth";
 
 import React from "react";
 import { useDoctors } from "@/hooks/useDoctors";
+import { normalizeDoctor } from "@/lib/doctors";
+import { API_BASE_URL, fetchApi } from "@/lib/api";
 
 export const Route = createFileRoute("/patient/doctors/$id")({ component: DoctorDetails });
 
 function DoctorDetails() {
   const { id } = useParams({ from: "/patient/doctors/$id" });
   const { data: apiDoctors, isLoading } = useDoctors();
-  
+  const navigate = useNavigate();
+  const user = useAuth((s) => s.user);
+
   const d = React.useMemo(() => {
     if (!apiDoctors) return null;
     const found = apiDoctors.find((x) => x.id === id);
     if (!found) return null;
+    const n = normalizeDoctor(found);
     return {
-      id: found.id,
-      name: found.user?.fullName || "Doctor",
-      specialty: found.specialty,
-      city: found.city,
-      price: found.consultationFee,
-      experience: found.yearsOfExperience,
-      bio: found.bio,
-      avatar: `https://i.pravatar.cc/150?u=${found.id}`,
+      ...n,
       rating: 5.0,
       reviews: 0,
       verified: true,
@@ -37,6 +36,26 @@ function DoctorDetails() {
   }, [apiDoctors, id]);
 
   const slots = ["09:00", "09:30", "11:00", "11:30", "14:00", "14:30", "16:00", "16:30"];
+
+  const startChat = async () => {
+    if (!user || !d) return;
+    const messagingUrl =
+      import.meta.env.VITE_MESSAGING_SERVICE_URL || API_BASE_URL;
+    try {
+      await fetchApi(
+        "/Conversations/initiate",
+        {
+          method: "POST",
+          body: JSON.stringify({ patientId: user.id, doctorId: d.userId }),
+        },
+        messagingUrl
+      );
+      navigate({ to: "/patient/messages" });
+    } catch (e: unknown) {
+      console.error("Failed to initiate conversation", e);
+      navigate({ to: "/patient/messages" });
+    }
+  };
 
   if (isLoading || !d) {
     return <div className="p-8 text-center text-muted-foreground">Loading doctor details...</div>;
@@ -64,7 +83,7 @@ function DoctorDetails() {
             <Link to="/patient/book/$id" params={{ id: d.id }}>
               <Button className="w-full bg-gradient-hero border-0 shadow-glow"><Calendar className="h-4 w-4 mr-1" /> Book — €{d.price}</Button>
             </Link>
-            <Link to="/patient/messages"><Button variant="outline" className="w-full"><MessageSquare className="h-4 w-4 mr-1" /> Message</Button></Link>
+            <Button variant="outline" onClick={startChat} className="w-full"><MessageSquare className="h-4 w-4 mr-1" /> Message</Button>
           </div>
         </div>
       </Card>

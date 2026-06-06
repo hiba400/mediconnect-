@@ -2,6 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.ai_service import ai_service
+from app.core.security import validate_token
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def format_history(history: List[ChatMessage]):
     return formatted
 
 @router.post("/chat", response_model=ChatResponse)
-async def medical_chat(request: ChatRequest):
+async def medical_chat(request: ChatRequest, token_data: dict = Depends(validate_token)):
     try:
         history = format_history(request.chat_history)
         answer = await ai_service.get_medical_chat_response(request.query, history)
@@ -33,7 +34,7 @@ async def medical_chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/appointment", response_model=ChatResponse)
-async def appointment_assistant(request: ChatRequest):
+async def appointment_assistant(request: ChatRequest, token_data: dict = Depends(validate_token)):
     try:
         history = format_history(request.chat_history)
         answer = await ai_service.get_appointment_assistance(request.query, history)

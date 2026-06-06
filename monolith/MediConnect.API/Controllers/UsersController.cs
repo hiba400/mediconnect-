@@ -48,6 +48,17 @@ public async Task<IActionResult> GetAllUsers()
     return Ok(users);
 }
 
+[HttpGet("doctors")]
+public async Task<IActionResult> GetDoctors()
+{
+    var doctors = await _context.Users
+        .Where(u => u.Role == UserRole.Doctor && u.IsActive)
+        .Select(u => new { u.Id, u.FullName, u.Email })
+        .ToListAsync();
+
+    return Ok(doctors);
+}
+
 [HttpGet("{id}")]
 public async Task<IActionResult> GetUserById(Guid id)
 {
@@ -91,6 +102,10 @@ public async Task<IActionResult> UpdateUser(Guid id, UpdateUserDto dto)
 
     user.FullName = dto.FullName;
     user.Email = dto.Email;
+    if (dto.IsActive.HasValue)
+    {
+        user.IsActive = dto.IsActive.Value;
+    }
 
     await _context.SaveChangesAsync();
 

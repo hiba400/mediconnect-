@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuth } from "@/store/auth";
+import { registerAccount } from "@/lib/auth-session";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/register")({ component: Register });
@@ -29,35 +30,16 @@ function Register() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      // 1. Register the user
-      await import("@/lib/api").then(m => m.fetchApi("/Auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          fullName: data.name,
-          email: data.email,
-          password: data.password,
-          role: 0 // Patient
-        }),
-      }));
+      const { user, token } = await registerAccount({
+        fullName: data.name,
+        email: data.email,
+        password: data.password,
+        role: 0, // Patient
+      });
 
-      // 2. Automatically login
-      const res = await import("@/lib/api").then(m => m.fetchApi<any>("/Auth/login", {
-        method: "POST",
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      }));
-
-      setUser({
-        id: res.id,
-        name: res.fullName,
-        email: res.email,
-        role: res.role,
-      }, res.token);
-
+      setUser(user, token);
       toast.success("Account created! Welcome to MediConnect.");
-      navigate({ to: "/patient" });
+      navigate({ to: "/patient", replace: true });
     } catch (e: any) {
       toast.error(e.message || "Registration failed");
     }

@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 
 using MediConnect.API.DTOs;
 using MediConnect.Domain.Entities;
@@ -15,10 +18,14 @@ namespace MediConnect.API.Controllers;
 public class AppointmentsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
 
-    public AppointmentsController(AppDbContext context)
+    public AppointmentsController(AppDbContext context, IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
         _context = context;
+        _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
     }
 
     [HttpPost]
@@ -111,6 +118,44 @@ public async Task<IActionResult> ConfirmAppointment(Guid id)
     appointment.Status = AppointmentStatus.Confirmed;
 
     await _context.SaveChangesAsync();
+
+    // Create conversation in messaging service
+    try
+    {
+        var messagingServiceUrl = _configuration["MessagingService:Url"] ?? "http://localhost:5197/api";
+        var client = _httpClientFactory.CreateClient();
+
+        var authHeader = Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrEmpty(authHeader))
+        {
+            client.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", authHeader);
+        }
+
+        var initiateDto = new
+        {
+            patientId = appointment.PatientId,
+            doctorId = appointment.DoctorId
+        };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(initiateDto),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var response = await client.PostAsync($"{messagingServiceUrl}/Conversations/initiate", content);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            // Log the error but don't fail the appointment confirmation
+            Console.WriteLine($"Failed to create conversation: {response.StatusCode}");
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log the error but don't fail the appointment confirmation
+        Console.WriteLine($"Error creating conversation: {ex.Message}");
+    }
 
     return Ok(appointment);
 }

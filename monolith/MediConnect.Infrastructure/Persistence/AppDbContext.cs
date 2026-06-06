@@ -14,4 +14,5 @@ public class AppDbContext : DbContext
 
 
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<DoctorApplication> DoctorApplications => Set<DoctorApplication>();
 }

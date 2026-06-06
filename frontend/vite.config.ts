@@ -8,8 +8,31 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 // @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:5195";
+const messagingProxyTarget = process.env.MESSAGING_PROXY_TARGET ?? "http://localhost:5197";
+
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
+  },
+  vite: {
+    server: {
+      proxy: {
+        "/api": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+        },
+        "/messaging-api": {
+          target: messagingProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/messaging-api/, "/api"),
+        },
+        "/hubs": {
+          target: messagingProxyTarget,
+          changeOrigin: true,
+          ws: true,
+        },
+      },
+    },
   },
 });

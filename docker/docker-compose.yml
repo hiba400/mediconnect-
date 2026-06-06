@@ -16,6 +16,7 @@ services:
       context: ../monolith
       dockerfile: Dockerfile
     container_name: mediconnect-monolith
+    restart: on-failure
     depends_on:
       - db
     environment:
@@ -24,14 +25,16 @@ services:
       - Jwt__Issuer=MediConnect
       - Jwt__Audience=MediConnectUsers
       - Jwt__DurationInMinutes=60
+      - MessagingService__Url=http://messaging-service:8080/api
     ports:
       - "5195:8080"
 
   doctor-service:
     build:
       context: ../microservices/doctor-service
-      dockerfile: DockerService.API/Dockerfile
+      dockerfile: DoctorService.API/Dockerfile
     container_name: mediconnect-doctor-service
+    restart: on-failure
     depends_on:
       - db
     environment:
@@ -39,6 +42,7 @@ services:
       - Jwt__Key=THIS_IS_A_SUPER_SECRET_KEY_123456_FOR_DOCKER
       - Jwt__Issuer=MediConnect
       - Jwt__Audience=MediConnectUsers
+      - Monolith__Url=http://monolith:8080/api
     ports:
       - "5196:8080"
 
@@ -47,6 +51,7 @@ services:
       context: ../microservices/messaging-service
       dockerfile: MessagingService.API/Dockerfile
     container_name: mediconnect-messaging-service
+    restart: on-failure
     depends_on:
       - db
     environment:
@@ -67,16 +72,24 @@ services:
       - doctor-service
       - messaging-service
       - ai-service
+    environment:
+      - VITE_API_URL=/api
+      - VITE_MESSAGING_SERVICE_URL=/api
+      - VITE_CHAT_HUB_URL=http://localhost:5197/hubs/chat
+      - API_URL_SSR=http://monolith:8080/api
+      - API_PROXY_TARGET=http://monolith:8080
+      - MESSAGING_PROXY_TARGET=http://messaging-service:8080
     ports:
-      - "8081:80"
+      - "8081:8080"
 
   ai-service:
     build:
       context: ../microservices/ai-service
       dockerfile: Dockerfile
     container_name: mediconnect-ai-service
+    restart: on-failure
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-mock-key-placeholder}
     ports:
       - "5198:8000"
 

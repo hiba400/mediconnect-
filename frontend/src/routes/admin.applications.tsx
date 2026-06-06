@@ -8,14 +8,58 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { applications } from "@/lib/mock-data";
+import {
+  mapApplicationStatus,
+  useApproveApplication,
+  useDoctorApplications,
+  useRejectApplication,
+} from "@/hooks/useDoctorApplications";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/applications")({ component: Applications });
 
 function Applications() {
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
-  const filtered = applications.filter((a) => filter === "all" || a.status === filter);
+  const { data: apiApps, isLoading } = useDoctorApplications(filter);
+  const approve = useApproveApplication();
+  const reject = useRejectApplication();
+
+  const applications = (apiApps ?? []).map((a) => ({
+    id: a.id,
+    name: a.fullName,
+    email: a.email,
+    specialty: a.specialty,
+    city: a.city,
+    experience: a.yearsOfExperience,
+    submittedAt: new Date(a.submittedAt).toLocaleDateString(),
+    documents: a.documentCount,
+    status: mapApplicationStatus(a.status),
+    license: a.licenseNumber,
+    bio: a.bio,
+  }));
+
+  const handleApprove = async (id: string) => {
+    try {
+      await approve.mutateAsync(id);
+      toast.success("Application approved");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to approve");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await reject.mutateAsync(id);
+      toast.error("Application rejected");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to reject");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading applications...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -44,9 +88,14 @@ function Applications() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((a) => (
+            {applications.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">No applications found.</TableCell>
+              </TableRow>
+            )}
+            {applications.map((a) => (
               <TableRow key={a.id}>
-                <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback>{a.name[4]}</AvatarFallback></Avatar><div><p className="font-medium text-sm">{a.name}</p><p className="text-xs text-muted-foreground">{a.email}</p></div></div></TableCell>
+                <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback>{a.name[0]}</AvatarFallback></Avatar><div><p className="font-medium text-sm">{a.name}</p><p className="text-xs text-muted-foreground">{a.email}</p></div></div></TableCell>
                 <TableCell className="text-sm">{a.specialty}</TableCell>
                 <TableCell className="text-sm">{a.city}</TableCell>
                 <TableCell className="text-sm">{a.experience}y</TableCell>
@@ -65,18 +114,21 @@ function Applications() {
                           <Row label="Specialty" value={a.specialty} />
                           <Row label="Email" value={a.email} />
                           <Row label="City" value={a.city} />
+                          <Row label="License" value={a.license} />
                           <Row label="Experience" value={`${a.experience} years`} />
                           <Row label="Documents" value={`${a.documents} uploaded`} />
                         </div>
-                        <div className="flex gap-2 pt-3">
-                          <Button onClick={() => toast.success("Application approved")} className="flex-1 bg-gradient-hero border-0"><Check className="h-4 w-4 mr-1" /> Approve</Button>
-                          <Button onClick={() => toast.error("Application rejected")} variant="outline" className="flex-1"><X className="h-4 w-4 mr-1" /> Reject</Button>
-                        </div>
+                        {a.status === "pending" && (
+                          <div className="flex gap-2 pt-3">
+                            <Button onClick={() => handleApprove(a.id)} className="flex-1 bg-gradient-hero border-0"><Check className="h-4 w-4 mr-1" /> Approve</Button>
+                            <Button onClick={() => handleReject(a.id)} variant="outline" className="flex-1"><X className="h-4 w-4 mr-1" /> Reject</Button>
+                          </div>
+                        )}
                       </DialogContent>
                     </Dialog>
                     {a.status === "pending" && <>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => toast.success("Approved")}><Check className="h-3.5 w-3.5 text-success" /></Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => toast.error("Rejected")}><X className="h-3.5 w-3.5 text-destructive" /></Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleApprove(a.id)}><Check className="h-3.5 w-3.5 text-success" /></Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => handleReject(a.id)}><X className="h-3.5 w-3.5 text-destructive" /></Button>
                     </>}
                   </div>
                 </TableCell>
@@ -88,6 +140,7 @@ function Applications() {
     </div>
   );
 }
+
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between border-b last:border-0 border-border/60 py-1.5"><span className="text-muted-foreground text-xs">{label}</span><span className="font-medium">{value}</span></div>;
+  return <div className="flex justify-between py-1 border-b last:border-0"><span className="text-muted-foreground">{label}</span><span className="font-medium">{value}</span></div>;
 }
